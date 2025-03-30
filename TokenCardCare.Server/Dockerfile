@@ -34,4 +34,5 @@ RUN dotnet publish "./TokenCardCare.Server.csproj" -c $BUILD_CONFIGURATION -o /a
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY --from=publish /src/tokencardcare.client/dist ./wwwroot
 ENTRYPOINT ["dotnet", "TokenCardCare.Server.dll"]
