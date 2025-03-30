@@ -1,0 +1,6 @@
+@TokenCardCare.Server_HostAddress = http://localhost:5262
+
+GET {{TokenCardCare.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
