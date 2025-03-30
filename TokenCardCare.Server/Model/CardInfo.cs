@@ -6,6 +6,7 @@ public class CardInfo
     public string CardType { get; set; } = null!;
     public string Hash { get; set; } = null!;
     public CardState State { get; set; }
+    public string Message { get; set; } = "";
 }
 
 public enum CardState

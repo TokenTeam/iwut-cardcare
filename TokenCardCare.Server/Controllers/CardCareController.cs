@@ -68,11 +68,6 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
             Hash = newCard.hash
         };
 
-        if (foundCard is not null)
-        {
-            dbContext.FoundCards.Remove(foundCard);
-        }
-
         await dbContext.Cards.AddAsync(card).ConfigureAwait(false);
         await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
@@ -103,6 +98,7 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
         var defaultCardHash = CalcHash(req.studentNumber, "校园卡", configuration.GetSection("Salt").Get<string>()!);
         var defaltCardQuery = dbContext.Cards.AsNoTracking().Where(x => x.Sno == req.studentNumber)
             .Where(x => x.Hash == defaultCardHash);
+
         if (!defaltCardQuery.Any())
         {
             // 在招领数据库中查找是否被找到
@@ -120,11 +116,6 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
                 State = foundCard is null ? CardState.Normal : CardState.Found
             };
 
-            if (foundCard is not null)
-            {
-                dbContext.FoundCards.Remove(foundCard);
-            }
-
             dbContext.Cards.Add(defualtCard);
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
         }
@@ -136,7 +127,12 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
                 CardName = x.Name,
                 CardType = x.Type,
                 Hash = x.Hash,
-                State = x.State
+                State = x.State,
+                Message = (from foundCard in dbContext.FoundCards.AsNoTracking()
+                           where foundCard.Hash == x.Hash
+                           where foundCard.Type == x.Type
+                           orderby foundCard.FoundTime descending
+                           select foundCard.Message).FirstOrDefault() ?? string.Empty
             });
 
         var res = await cards.ToArrayAsync().ConfigureAwait(false);
@@ -156,6 +152,17 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
         }
 
         card.State = CardState.Normal;
+
+        // 在招领数据库中查找是否被找到
+        var foundCard = dbContext.FoundCards
+            .Where(x => x.Type == req.cardType)
+            .Where(x => x.Hash == req.hash)
+            .SingleOrDefault();
+        if (foundCard is not null)
+        {
+            dbContext.FoundCards.Remove(foundCard);
+        }
+
         await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
         return Ok(ApiResponse.Success("重置卡片成功"));
@@ -164,24 +171,27 @@ public class CardCareController(IConfiguration configuration, AppDbContext dbCon
     [HttpPost("CheckCard")]
     public async Task<IActionResult> CheckCard([FromBody] ApiRequestModel.CheckCard req)
     {
-        var cardQuery = dbContext.Cards.Where(x => x.Type == req.cardType)
+        var cardQuery = dbContext.Cards
+            .Where(x => x.Type == req.cardType)
             .Where(x => x.Hash == req.hash);
 
         var card = cardQuery.SingleOrDefault();
 
-        // 卡片不存在，加入招领数据库
+        // 加入招领数据库
+        var foundCard = new FoundCard
+        {
+            Type = req.cardType,
+            Hash = req.hash,
+            FoundTime = DateTime.Now,
+            Message = req.message
+        };
+
+        dbContext.FoundCards.Add(foundCard);
+        await dbContext.SaveChangesAsync().ConfigureAwait(false);
+
+        // 卡片不存在
         if (card is null)
         {
-            var foundCard = new FoundCard
-            {
-                Type = req.cardType,
-                Hash = req.hash,
-                FoundTime = DateTime.Now
-            };
-
-            dbContext.FoundCards.Add(foundCard);
-            await dbContext.SaveChangesAsync().ConfigureAwait(false);
-
             return Ok(ApiResponse.Success("卡片不存在", new
             {
                 Match = false

@@ -12,5 +12,7 @@ public class FoundCard
 
     public string Hash { get; set; } = null!;
 
+    public string Message { get; set; } = null!;
+
     public DateTime FoundTime { get; set; }
 }
