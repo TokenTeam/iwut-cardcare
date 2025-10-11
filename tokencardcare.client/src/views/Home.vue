@@ -1,6 +1,6 @@
 <template>
-  <t-navbar title="Card Care+" :fixed="false" />
-
+<!--  <t-navbar title="Card Care+" :fixed="false" />-->
+  <t-navbar title="" :fixed="false" />
   <p class="text1">你好，{{ userName }}</p>
   <p class="text2">Card Care+已经守护你{{ days }}天</p>
 

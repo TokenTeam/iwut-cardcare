@@ -11,7 +11,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Home',
     component: Home,
     meta: {
-      title: '首页', // 自定义元信息
+      title: '智寻卡片', // 自定义元信息
       requiresAuth: false, // 是否需要登录
     },
   }
@@ -27,7 +27,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 修改页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} | My App`
+    document.title = `${to.meta.title}`
   }
   next()
 })
